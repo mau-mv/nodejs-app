@@ -1,0 +1,66 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  DEV_SERVER: 'ec2-user@18.236.166.54' # Your EC2 instance details
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    steps:
+    - task: UseNode@1
+      inputs:
+        version: '14.x'
+
+    - script: |
+        npm install
+      displayName: 'Install dependencies'
+
+    - script: |
+        tar -czvf nodejs-app.tar.gz app.js package.json
+      displayName: 'Package application'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'nodejs-app.tar.gz'
+        artifactName: 'nodejs-app'
+        publishLocation: 'Container'
+
+- stage: DeployDev
+  dependsOn: Build
+  jobs:
+  - deployment: DeployDev
+    environment: 'Dev'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: nodejs-app
+
+          - script: |
+              echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+              chmod 600 ~/.ssh/id_rsa
+              ssh-keyscan -H ${variables.DEV_SERVER#*@} >> ~/.ssh/known_hosts
+
+              ssh -i ~/.ssh/id_rsa ${variables.DEV_SERVER} << 'EOF'
+                sudo yum update -y
+                curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
+                sudo yum install -y nodejs
+                node -v
+                npm -v
+              EOF
+            displayName: 'Install Node.js and npm on EC2'
+
+          - script: |
+              scp -i ~/.ssh/id_rsa nodejs-app.tar.gz ${variables.DEV_SERVER}:/tmp/
+              ssh -i ~/.ssh/id_rsa ${variables.DEV_SERVER} << 'EOF'
+                tar -xzvf /tmp/nodejs-app.tar.gz -C /tmp/
+                npm install --prefix /tmp
+                nohup node /tmp/app.js > /tmp/nodejs-app.log 2>&1 &
+              EOF
+            displayName: 'Deploy to Dev server'

@@ -11,7 +11,6 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    sh 'apt-get install npm -y'
                     // Install dependencies
                     sh 'npm install'
                     // Package the application into a tarball

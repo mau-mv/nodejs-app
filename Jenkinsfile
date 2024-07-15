@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DEV_SERVER = "ec2-user@35.86.80.247"
-        SSH_KEY = credentials("ssh-key-aws")
         ARTIFACT_NAME = 'nodejs-app.tar.gz'
     }
 
@@ -13,6 +12,7 @@ pipeline {
                 script {
                     // Install dependencies
                     sh 'npm install'
+
                     // Package the application into a tarball
                     sh """
                         tar -czvf ${env.ARTIFACT_NAME} app.js package.json
@@ -23,9 +23,9 @@ pipeline {
 
         stage('Deploy to Dev') {
             steps {
-                script {
-                    sshagent(credentials: ['ssh-key-aws']){
-                        deployToServer(DEV_SERVER)
+                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key-aws', keyFileVariable: 'SSH_KEY')]) {
+                    script {
+                        deployToServer(DEV_SERVER, SSH_KEY)
                     }
                 }
             }
@@ -39,13 +39,14 @@ pipeline {
     }
 }
 
-def deployToServer(server) {
+def deployToServer(server, sshKey) {
     sh """
+        set -e
         mkdir -p ~/.ssh
         ssh-keyscan -H ${server.split('@')[1]} >> ~/.ssh/known_hosts
-        scp -i ${SSH_KEY} ${ARTIFACT_NAME} ${server}:/tmp/
-        ssh -i ${SSH_KEY} ${server} 'tar -xzvf /tmp/${ARTIFACT_NAME} -C /tmp/'
-        ssh -i ${SSH_KEY} ${server} 'npm install --prefix /tmp'
-        ssh -i ${SSH_KEY} ${server} 'nohup npm start --prefix /tmp/app.js > /tmp/nodejs-app.log 2>&1 &'
+        scp -i ${sshKey} ${ARTIFACT_NAME} ${server}:/tmp/ || exit 1
+        ssh -i ${sshKey} ${server} 'tar -xzvf /tmp/${ARTIFACT_NAME} -C /tmp/' || exit 1
+        ssh -i ${sshKey} ${server} '/usr/bin/npm install --prefix /tmp' || exit 1
+        ssh -i ${sshKey} ${server} 'nohup /usr/bin/npm start --prefix /tmp/app.js > /tmp/nodejs-app.log 2>&1 &' || exit 1
     """
 }

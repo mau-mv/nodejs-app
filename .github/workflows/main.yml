@@ -1,0 +1,77 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: |
+        npm install
+
+    - name: Package application
+      run: |
+        tar -czvf nodejs-app.tar.gz app.js package.json
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: nodejs-app
+        path: nodejs-app.tar.gz
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: nodejs-app
+        path: .
+
+    - name: Install Node.js and npm on EC2
+      env:
+        DEV_SERVER: ${{ secrets.DEV_SERVER }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${DEV_SERVER#*@} >> ~/.ssh/known_hosts
+
+        ssh -i ~/.ssh/id_rsa ${DEV_SERVER} << 'EOF'
+          sudo yum update -y
+          curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
+          sudo yum install -y nodejs
+          node -v
+          npm -v
+        EOF
+
+    - name: Deploy to Dev server
+      env:
+        DEV_SERVER: ${{ secrets.DEV_SERVER }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${DEV_SERVER#*@} >> ~/.ssh/known_hosts
+
+        scp -i ~/.ssh/id_rsa nodejs-app.tar.gz ${DEV_SERVER}:/tmp/
+        ssh -i ~/.ssh/id_rsa ${DEV_SERVER} << 'EOF'
+          tar -xzvf /tmp/nodejs-app.tar.gz -C /tmp/
+          npm install --prefix /tmp
+          nohup node /tmp/app.js > /tmp/nodejs-app.log 2>&1 &
+        EOF

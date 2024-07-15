@@ -12,7 +12,7 @@ pipeline {
             steps {
                 script {
                     // Install npm globally (if needed)
-                    sh 'apt install npm -y'
+                    sh 'sudo apt-get install npm -y'
                     // Install dependencies
                     sh 'npm install'
                     // Package the application into a tarball

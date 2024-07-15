@@ -47,6 +47,6 @@ def deployToServer(server, sshKey) {
         scp -i ${sshKey} ${ARTIFACT_NAME} ${server}:/tmp/ || exit 1
         ssh -i ${sshKey} ${server} 'tar -xzvf /tmp/${ARTIFACT_NAME} -C /tmp/' || exit 1
         ssh -i ${sshKey} ${server} '/usr/bin/npm install --prefix /tmp' || exit 1
-        ssh -i ${sshKey} ${server} 'nohup /usr/bin/npm start --prefix /tmp/app.js > /tmp/nodejs-app.log 2>&1 &' || exit 1
+        ssh -i ${sshKey} ${server} 'nohup /usr/bin/npm start --prefix /tmp > /tmp/nodejs-app.log 2>&1 &' || exit 1
     """
 }

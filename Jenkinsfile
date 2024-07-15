@@ -11,8 +11,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Install npm globally (if needed)
-                    sh 'sudo apt-get install npm -y'
+                    sh 'apt-get install npm -y'
                     // Install dependencies
                     sh 'npm install'
                     // Package the application into a tarball

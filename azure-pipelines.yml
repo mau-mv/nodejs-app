@@ -53,6 +53,9 @@ stages:
               ls -l ~/.ssh/id_rsa
               wc -l ~/.ssh/id_rsa
             displayName: 'Prepare SSH Key'
+            env:
+              SSH_PRIVATE_KEY: $(SSH_PRIVATE_KEY)
+              DEV_SERVER: $(DEV_SERVER)
 
           - script: |
               ssh -i ~/.ssh/id_rsa $DEV_SERVER sudo yum update -y

@@ -66,7 +66,7 @@ stages:
             displayName: 'Install Node.js and npm on EC2'
 
           - script: |
-              scp -i ~/.ssh/id_rsa nodejs-app.tar.gz $DEV_SERVER:/tmp/
+              scp -i ~/.ssh/id_rsa $(Pipeline.Workspace)/nodejs-app/nodejs-app.tar.gz $DEV_SERVER:/tmp/
               ssh -i ~/.ssh/id_rsa $DEV_SERVER tar -xzvf /tmp/nodejs-app.tar.gz -C /tmp/
               ssh -i ~/.ssh/id_rsa $DEV_SERVER npm install --prefix /tmp
               ssh -i ~/.ssh/id_rsa $DEV_SERVER nohup node /tmp/app.js > /tmp/nodejs-app.log 2>&1 &

@@ -69,5 +69,5 @@ stages:
               scp -i ~/.ssh/id_rsa $(Pipeline.Workspace)/nodejs-app/nodejs-app.tar.gz $DEV_SERVER:/tmp/
               ssh -i ~/.ssh/id_rsa $DEV_SERVER tar -xzvf /tmp/nodejs-app.tar.gz -C /tmp/
               ssh -i ~/.ssh/id_rsa $DEV_SERVER npm install --prefix /tmp
-              ssh -i ~/.ssh/id_rsa $DEV_SERVER nohup npm start --prefix /tmp > /tmp/nodejs-app.log 2>&1 &
+              ssh -i ~/.ssh/id_rsa $DEV_SERVER 'nohup /usr/bin/npm start --prefix /tmp > /tmp/nodejs-app.log 2>&1 &' || exit 1
             displayName: 'Deploy to Dev server'

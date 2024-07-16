@@ -46,6 +46,7 @@ stages:
               ssh-keyscan -H ${DEV_SERVER#*@} >> ~/.ssh/known_hosts
 
               ssh -i ~/.ssh/id_rsa $DEV_SERVER << 'EOF'
+                echo " I HAVE ENTERED, TRYING TO UPDATE YUM"
                 sudo yum update -y
                 curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
                 sudo yum install -y nodejs

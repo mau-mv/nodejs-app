@@ -43,7 +43,7 @@ stages:
             artifact: nodejs-app
 
           - script: |
-              echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+              echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
               ssh-keyscan -H ${variables.DEV_SERVER#*@} >> ~/.ssh/known_hosts
 

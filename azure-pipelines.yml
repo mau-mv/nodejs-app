@@ -4,9 +4,6 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-  DEV_SERVER: 'ec2-user@18.236.166.54' # Your EC2 instance details
-
 stages:
 - stage: Build
   jobs:
@@ -43,11 +40,12 @@ stages:
             artifact: nodejs-app
 
           - script: |
-              echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+              mkdir -p ~/.ssh
+              echo "$SSH_PRIVATE_KEY" | tr '_' '\n' > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
-              ssh-keyscan -H ${variables.DEV_SERVER#*@} >> ~/.ssh/known_hosts
+              ssh-keyscan -H ${DEV_SERVER#*@} >> ~/.ssh/known_hosts
 
-              ssh -i ~/.ssh/id_rsa ${variables.DEV_SERVER} << 'EOF'
+              ssh -i ~/.ssh/id_rsa $DEV_SERVER << 'EOF'
                 sudo yum update -y
                 curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
                 sudo yum install -y nodejs
@@ -57,8 +55,8 @@ stages:
             displayName: 'Install Node.js and npm on EC2'
 
           - script: |
-              scp -i ~/.ssh/id_rsa nodejs-app.tar.gz ${variables.DEV_SERVER}:/tmp/
-              ssh -i ~/.ssh/id_rsa ${variables.DEV_SERVER} << 'EOF'
+              scp -i ~/.ssh/id_rsa nodejs-app.tar.gz $DEV_SERVER:/tmp/
+              ssh -i ~/.ssh/id_rsa $DEV_SERVER << 'EOF'
                 tar -xzvf /tmp/nodejs-app.tar.gz -C /tmp/
                 npm install --prefix /tmp
                 nohup node /tmp/app.js > /tmp/nodejs-app.log 2>&1 &

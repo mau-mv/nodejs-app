@@ -42,12 +42,16 @@ stages:
               targetPath: '$(Pipeline.Workspace)/nodejs-app'
           
           - script: |
+              echo "SSH_PRIVATE_KEY content (encoded): ${SSH_PRIVATE_KEY}"
               mkdir -p ~/.ssh
               echo "$SSH_PRIVATE_KEY" | sed 's/_/\n/g' > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
               ssh-keyscan -H ${DEV_SERVER#*@} >> ~/.ssh/known_hosts
               echo "First few lines of id_rsa to verify:"
               head -n 5 ~/.ssh/id_rsa
+              echo "File permissions and size:"
+              ls -l ~/.ssh/id_rsa
+              wc -l ~/.ssh/id_rsa
             displayName: 'Prepare SSH Key'
 
           - script: |

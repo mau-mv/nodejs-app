@@ -40,13 +40,17 @@ stages:
             inputs:
               artifactName: 'nodejs-app'
               targetPath: '$(Pipeline.Workspace)/nodejs-app'
-
+          
           - script: |
               mkdir -p ~/.ssh
-              echo "$SSH_PRIVATE_KEY" | tr '_' '\n' > ~/.ssh/id_rsa
+              echo "$SSH_PRIVATE_KEY" | sed 's/_/\n/g' > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
               ssh-keyscan -H ${DEV_SERVER#*@} >> ~/.ssh/known_hosts
+              echo "First few lines of id_rsa to verify:"
+              head -n 5 ~/.ssh/id_rsa
+            displayName: 'Prepare SSH Key'
 
+          - script: |
               ssh -i ~/.ssh/id_rsa $DEV_SERVER sudo yum update -y
               ssh -i ~/.ssh/id_rsa $DEV_SERVER curl -sL https://rpm.nodesource.com/setup_18.x | sudo bash -
               ssh -i ~/.ssh/id_rsa $DEV_SERVER sudo yum install -y nodejs
